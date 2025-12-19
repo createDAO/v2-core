@@ -24,27 +24,27 @@ This is a **complete rewrite** of createDAO, rebuilt from the ground up using Op
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                              DAOFactory                                      │
-│  - Deploys implementations in constructor (tokenImpl, governorImpl)          │
-│  - Creates complete DAO systems via Clones                                   │
-│  - Tracks all deployed DAOs                                                  │
+│                              DAOFactory                                     │
+│  - Deploys implementations in constructor (tokenImpl, governorImpl)         │
+│  - Creates complete DAO systems via Clones                                  │
+│  - Tracks all deployed DAOs                                                 │
 └─────────────────────────────────┬───────────────────────────────────────────┘
                                   │ createDAO()
                                   ▼
               ┌───────────────────┼───────────────────┐
               │                   │                   │
               ▼                   ▼                   ▼
-    ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+    ┌─────────────────┐  ┌──────────────────┐  ┌──────────────────┐
     │ DAOToken (Proxy)│  │TimelockController│  │DAOGovernor(Proxy)│
-    │   EIP-1167      │  │   (Treasury)     │  │   EIP-1167      │
-    │                 │  │                  │  │                 │
-    │ ERC20Votes      │  │ Holds 99% tokens │  │ Governor        │
-    │ ERC20Permit     │  │ 1-day delay      │  │ Settings        │
-    │ Auto-delegate   │  │                  │  │ Counting        │
-    │                 │  │                  │  │ Votes/Quorum    │
-    │ 1% → Creator    │  │                  │  │ Timelock        │
-    │ 99% → Treasury  │  │                  │  │                 │
-    └─────────────────┘  └─────────────────┘  └─────────────────┘
+    │   EIP-1167      │  │   (Treasury)     │  │   EIP-1167       │
+    │                 │  │                  │  │                  │
+    │ ERC20Votes      │  │ Holds 99% tokens │  │ Governor         │
+    │ ERC20Permit     │  │ 1-day delay      │  │ Settings         │
+    │ Auto-delegate   │  │                  │  │ Counting         │
+    │                 │  │                  │  │ Votes/Quorum     │
+    │ 1% → Creator    │  │                  │  │ Timelock         │
+    │ 99% → Treasury  │  │                  │  │                  │
+    └─────────────────┘  └──────────────────┘  └──────────────────┘
 ```
 
 ### Core Contracts
@@ -189,14 +189,13 @@ createdao-contracts/
 │   ├── flow/               # Complete workflow scripts
 │   ├── utils/              # Utility functions
 │   └── verify/             # Contract verification
-├── test/
-│   ├── DAOFactory.test.ts  # Factory tests
-│   ├── DAOGovernor.test.ts # Governor tests
-│   ├── DAOToken.test.ts    # Token tests
-│   ├── helpers/            # Test utilities
-│   └── integration/        # Integration tests
-└── docs/
-    └── ARCHITECTURE.md     # Detailed architecture docs
+└── test/
+    ├── DAOFactory.test.ts  # Factory tests
+    ├── DAOGovernor.test.ts # Governor tests
+    ├── DAOToken.test.ts    # Token tests
+    ├── helpers/            # Test utilities
+    └── integration/        # Integration tests
+
 ```
 
 ## Tech Stack
