@@ -80,6 +80,42 @@ export const isDeployerAvailable = async (publicClient) => {
 };
 
 /**
+ * Sleep helper
+ * @param {number} ms
+ */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Poll for contract bytecode to appear at an address.
+ * Useful when using load-balanced RPCs that can be temporarily out-of-sync.
+ *
+ * @param {object} publicClient - Viem public client
+ * @param {string} address - Address to check
+ * @param {object} [options]
+ * @param {number} [options.retries=20] - Number of attempts
+ * @param {number} [options.initialDelayMs=1000] - Initial delay between attempts
+ * @param {number} [options.backoffMultiplier=1.25] - Delay multiplier after each attempt
+ * @returns {Promise<boolean>} True if code detected within retry window
+ */
+export const waitForContractDeployed = async (
+  publicClient,
+  address,
+  { retries = 20, initialDelayMs = 1000, backoffMultiplier = 1.25 } = {}
+) => {
+  let delay = initialDelayMs;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    if (await isContractDeployed(publicClient, address)) return true;
+    if (attempt === retries) break;
+
+    await sleep(delay);
+    delay = Math.ceil(delay * backoffMultiplier);
+  }
+
+  return false;
+};
+
+/**
  * Build the transaction data for CREATE2 deployment
  * The deployer expects: salt (32 bytes) + initCode
  * @param {string} salt - The 32-byte salt (hex string with 0x prefix)
@@ -108,6 +144,15 @@ export const deployViaCreate2 = async ({
   publicClient,
   initCode,
   salt = DEFAULT_FACTORY_SALT,
+  /**
+   * How many confirmations to wait for before checking code.
+   * Higher reduces false negatives on lagging RPC nodes.
+   */
+  confirmations = 2,
+  /**
+   * How long/how often to poll for bytecode after the tx is confirmed.
+   */
+  codeCheck = { retries: 20, initialDelayMs: 1000, backoffMultiplier: 1.25 },
 }) => {
   // Compute expected address
   const expectedAddress = computeCreate2Address(DETERMINISTIC_DEPLOYER, salt, initCode);
@@ -138,14 +183,24 @@ export const deployViaCreate2 = async ({
     data,
   });
   
-  // Wait for confirmation
-  const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
-  
-  // Verify deployment
-  if (!(await isContractDeployed(publicClient, expectedAddress))) {
+  // Wait for confirmation(s)
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash: txHash,
+    confirmations,
+  });
+
+  if (receipt.status !== "success") {
+    throw new Error(`Deployment transaction reverted. Transaction: ${txHash}`);
+  }
+
+  // Verify deployment (retry/poll to avoid RPC lag false negatives)
+  const deployed = await waitForContractDeployed(publicClient, expectedAddress, codeCheck);
+  if (!deployed) {
     throw new Error(
       `Deployment transaction succeeded but contract not found at expected address ${expectedAddress}. ` +
-      `Transaction: ${txHash}`
+        `This is commonly caused by a lagging/load-balanced RPC. Try re-running the script, ` +
+        `increasing confirmations, or using a different RPC endpoint. ` +
+        `Transaction: ${txHash}`
     );
   }
   

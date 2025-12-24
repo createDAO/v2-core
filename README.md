@@ -67,23 +67,48 @@ This is a **complete rewrite** of createDAO, rebuilt from the ground up using Op
 | Timelock Delay | 1 day | Execution delay after proposal passes |
 | Token Decimals | 18 | Standard ERC20 decimals |
 
-## Testnet Deployments
+## Deployments
 
-Currently deployed on **Sepolia testnet** only. Mainnet deployments coming soon.
+Deployed using Arachnid’s deterministic CREATE2 deployer, so the **DAOFactory address is identical across chains** when the salt + initCodeHash are the same.
+
+### Base (Mainnet)
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| **DAOFactory** | `0xd141662F4b788F28B2a0769a6d3f243D046B571f` | [View on Basescan](https://basescan.org/address/0xd141662F4b788F28B2a0769a6d3f243D046B571f) |
+| DAOToken Implementation | `0xfAAB628eddeEC6093CCdB5288b865a8073ab55Db` | [View on Basescan](https://basescan.org/address/0xfAAB628eddeEC6093CCdB5288b865a8073ab55Db) |
+| DAOGovernor Implementation | `0x2F81fb483fD1B578d16d41e92c62A365b4b04081` | [View on Basescan](https://basescan.org/address/0x2F81fb483fD1B578d16d41e92c62A365b4b04081) |
+
+**Example DAO deployed on Base (from deployment record `base-8453-2025-12-24T11-50-43.211Z.json`)**
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| DAOToken (Proxy / Clone) | `0x154EB315Ab729E998847aA55F8b5bC73cf8A61d9` | [View on Basescan](https://basescan.org/address/0x154EB315Ab729E998847aA55F8b5bC73cf8A61d9) |
+| DAOGovernor (Proxy / Clone) | `0x4013cdFEB389A4213e8565258D2ac3604bFbB1B3` | [View on Basescan](https://basescan.org/address/0x4013cdFEB389A4213e8565258D2ac3604bFbB1B3) |
+| TimelockController (Treasury) | `0xb8CE0BbD2c5B589Da458677392B255E761E1A15F` | [View on Basescan](https://basescan.org/address/0xb8CE0BbD2c5B589Da458677392B255E761E1A15F) |
 
 ### Sepolia (Ethereum Testnet)
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| **DAOFactory** | `0x2e00E5c34D7779BcaEB0f1D679efB89ea98624AE` | [View on Etherscan](https://sepolia.etherscan.io/address/0x2e00E5c34D7779BcaEB0f1D679efB89ea98624AE) |
-| DAOToken Implementation | `0x52d12B0a3D4FA61aeC8c186DCdE60aF167A3b97C` | [View on Etherscan](https://sepolia.etherscan.io/address/0x52d12B0a3D4FA61aeC8c186DCdE60aF167A3b97C) |
-| DAOGovernor Implementation | `0xF9e6a8DBfC916bdba994A6D67f7B6B3055DEe3ad` | [View on Etherscan](https://sepolia.etherscan.io/address/0xF9e6a8DBfC916bdba994A6D67f7B6B3055DEe3ad) |
+| **DAOFactory** | `0xd141662F4b788F28B2a0769a6d3f243D046B571f` | [View on Etherscan](https://sepolia.etherscan.io/address/0xd141662F4b788F28B2a0769a6d3f243D046B571f) |
+| DAOToken Implementation | `0xfAAB628eddeEC6093CCdB5288b865a8073ab55Db` | [View on Etherscan](https://sepolia.etherscan.io/address/0xfAAB628eddeEC6093CCdB5288b865a8073ab55Db) |
+| DAOGovernor Implementation | `0x2F81fb483fD1B578d16d41e92c62A365b4b04081` | [View on Etherscan](https://sepolia.etherscan.io/address/0x2F81fb483fD1B578d16d41e92c62A365b4b04081) |
+
+**Example DAO deployed on Sepolia (from deployment record `sepolia-11155111-2025-12-24T11-25-23.612Z.json`)**
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| DAOToken (Proxy / Clone) | `0x2F524705E04aFa3b450a8C60f04975630B6deff4` | [View on Etherscan](https://sepolia.etherscan.io/address/0x2F524705E04aFa3b450a8C60f04975630B6deff4) |
+| DAOGovernor (Proxy / Clone) | `0x707e6c8d2C52C16eA4F93e41932b11e34814B4B0` | [View on Etherscan](https://sepolia.etherscan.io/address/0x707e6c8d2C52C16eA4F93e41932b11e34814B4B0) |
+| TimelockController (Treasury) | `0x2cA78756658e85DC5F175363553225881e8537FC` | [View on Etherscan](https://sepolia.etherscan.io/address/0x2cA78756658e85DC5F175363553225881e8537FC) |
 
 #### Deployment Details (CREATE2)
 
 ```
 CREATE2 Deployer: 0x4e59b44847b379578588920cA78FbF26c0B4956C
-Salt: 0x7bd8c48ac07cb3d28c6b73ec94c14c4339319ed18ca1d24c3c305586a05bb386
+Salt: CreateDAO_Production_v2_0_0
+Salt Hash: 0x86e878d0db536a6fd426beb56994c299552f4885e0000a9bb0b08f46860e1fdb
 Init Code Hash: 0xb88b2130abbf8e7570a958fcdc98f4143b26f2bd1d7ad95c56b62f31350f8485
 ```
 
@@ -105,6 +130,7 @@ Create a `.env` file in the project root:
 ```env
 # Network RPC URLs
 SEPOLIA_RPC_URL=https://rpc.ankr.com/eth_sepolia
+BASE_RPC_URL=https://mainnet.base.org
 
 # API Keys for contract verification
 ETHERSCAN_API_KEY=your_etherscan_api_key
@@ -144,7 +170,37 @@ npx hardhat test test/DAOFactory.test.ts
 
 ### Deployment
 
-#### Deploy to Sepolia (Deterministic)
+#### Recommended Flow (Deploy then Verify)
+
+1) **Deploy + Create DAO (writes a deployment record; no verification)**
+
+```bash
+npx hardhat run scripts/flow/deploy-and-create.js --network sepolia
+```
+
+Optional:
+
+```bash
+FACTORY_SALT="my-production-salt" DEPLOYMENT_TAG="sepolia-smoke" npx hardhat run scripts/flow/deploy-and-create.js --network sepolia
+```
+
+This creates:
+- `deployments/sepolia.latest.json`
+- `deployments/sepolia-<chainId>-<timestamp>.json`
+
+2) **Verify everything from the deployment record**
+
+```bash
+npx hardhat run scripts/flow/verify-all.js --network sepolia
+```
+
+To verify a specific record:
+
+```bash
+DEPLOYMENT_FILE=deployments/sepolia-11155111-<timestamp>.json npx hardhat run scripts/flow/verify-all.js --network sepolia
+```
+
+#### Advanced: Deploy Factory Only (Deterministic)
 
 ```bash
 npx hardhat run scripts/deploy/factoryDeterministic.js --network sepolia

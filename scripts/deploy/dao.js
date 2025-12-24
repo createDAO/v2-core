@@ -4,9 +4,88 @@
  * @dev Verifies token distribution and quorum requirements after creation
  */
 
-import { formatEther } from "viem";
+import { formatEther, decodeEventLog } from "viem";
 import * as logger from "../utils/logger.js";
 import { getConfigForNetwork, FACTORY_CONSTANTS } from "../utils/config.js";
+
+/**
+ * Sleep helper
+ * @param {number} ms
+ */
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Wait until the RPC reports contract bytecode at an address.
+ * This avoids failures on load-balanced/stale RPCs immediately after deployment.
+ *
+ * @param {Object} publicClient
+ * @param {string} address
+ * @param {Object} [opts]
+ * @param {string} [opts.label]
+ * @param {number} [opts.timeoutMs]
+ * @param {number} [opts.pollMs]
+ */
+const waitForCode = async (
+  publicClient,
+  address,
+  { label = "contract", timeoutMs = 60_000, pollMs = 2_000 } = {}
+) => {
+  const started = Date.now();
+  // viem returns `0x` or `undefined/null` depending on client/version
+  // We'll treat anything other than a non-empty hex string as not deployed.
+  while (true) {
+    const code = await publicClient.getBytecode({ address });
+    if (code && code !== "0x") return;
+
+    if (Date.now() - started > timeoutMs) {
+      throw new Error(
+        `Timed out waiting for bytecode at ${address} (${label}). ` +
+          `This is usually RPC lag; try increasing confirmations or switching RPC.`
+      );
+    }
+
+    await sleep(pollMs);
+  }
+};
+
+/**
+ * Retry wrapper with backoff for transient RPC inconsistencies.
+ *
+ * @template T
+ * @param {() => Promise<T>} fn
+ * @param {Object} [opts]
+ * @param {number} [opts.retries]
+ * @param {number} [opts.initialDelayMs]
+ * @param {string} [opts.label]
+ * @returns {Promise<T>}
+ */
+const withRetries = async (
+  fn,
+  { retries = 8, initialDelayMs = 750, label = "rpc read" } = {}
+) => {
+  let attempt = 0;
+  // exponential backoff, capped
+  while (true) {
+    try {
+      return await fn();
+    } catch (error) {
+      const returnedNoData =
+        error?.cause?.name === "ContractFunctionZeroDataError" ||
+        error?.shortMessage?.includes('returned no data') ||
+        error?.message?.includes('returned no data');
+
+      attempt += 1;
+      if (!returnedNoData || attempt > retries) throw error;
+
+      const delay = Math.min(initialDelayMs * 2 ** (attempt - 1), 10_000);
+      logger.warn(
+        `Transient RPC issue (${label}): contract returned no data. ` +
+          `Retrying in ${delay}ms... (attempt ${attempt}/${retries})`
+      );
+      await sleep(delay);
+    }
+  }
+};
 
 /**
  * Create a new DAO from the factory
@@ -54,26 +133,77 @@ export const createDAO = async (factoryContract, viem, publicClient, networkName
   logger.info(`Transaction hash: ${hash}`);
 
   // Wait for transaction and get receipt (using shared publicClient from factory)
+  const confirmations = Number(process.env.TX_CONFIRMATIONS || 1);
   const receipt = await publicClient.waitForTransactionReceipt({
     hash,
-    confirmations: 1,
+    confirmations,
   });
   logger.success(`Transaction confirmed in block: ${receipt.blockNumber}`);
 
-  // Get DAO count and fetch the latest DAO
-  const daoCount = await factoryContract.read.getDAOCount();
-  const daoInfo = await factoryContract.read.getDAO([daoCount - 1n]);
+  // Prefer reading created DAO addresses from the tx receipt event logs.
+  // This avoids issues where a load-balanced RPC returns a slightly-stale state
+  // immediately after a tx is mined.
+  let token;
+  let timelock;
+  let governor;
 
-  const { token, timelock, governor } = daoInfo;
+  try {
+    const factoryAddress = factoryContract.address;
+    const factoryAbi = factoryContract.abi;
+
+    for (const log of receipt.logs) {
+      // Only consider logs emitted by the factory
+      if (!log.address || log.address.toLowerCase() !== factoryAddress.toLowerCase()) continue;
+
+      // Attempt to decode any factory log; ignore decode failures
+      try {
+        const decoded = decodeEventLog({
+          abi: factoryAbi,
+          data: log.data,
+          topics: log.topics,
+        });
+
+        if (decoded.eventName === "DAOCreated") {
+          token = decoded.args.token;
+          timelock = decoded.args.timelock;
+          governor = decoded.args.governor;
+          break;
+        }
+      } catch {
+        // ignore
+      }
+    }
+  } catch {
+    // ignore and fall back
+  }
+
+  // Fallback: read the latest DAO via storage, but guard against daoCount=0.
+  if (!token || !timelock || !governor) {
+    const daoCount = await factoryContract.read.getDAOCount();
+    if (daoCount === 0n) {
+      throw new Error(
+        "DAO creation tx confirmed but factory DAO count is 0. " +
+          "This is likely due to RPC lag. Please re-run, increase confirmations, or switch RPC."
+      );
+    }
+
+    const daoInfo = await factoryContract.read.getDAO([daoCount - 1n]);
+    ({ token, timelock, governor } = daoInfo);
+  }
 
   logger.success(`DAO created successfully!`);
   logger.address("DAOToken (Proxy)", token);
   logger.address("TimelockController", timelock);
   logger.address("DAOGovernor (Proxy)", governor);
 
+  // Guard against load-balanced/stale RPC reads immediately after deployment
+  await waitForCode(publicClient, token, { label: "DAOToken" });
+  await waitForCode(publicClient, governor, { label: "DAOGovernor" });
+
   // Verify token distribution
   await verifyTokenDistribution(
     viem,
+    publicClient,
     token,
     timelock,
     creatorAddress,
@@ -81,7 +211,7 @@ export const createDAO = async (factoryContract, viem, publicClient, networkName
   );
 
   // Verify quorum settings
-  await verifyQuorumSettings(viem, governor, token, creatorAddress);
+  await verifyQuorumSettings(viem, publicClient, governor, token, creatorAddress);
 
   return {
     token,
@@ -102,6 +232,7 @@ export const createDAO = async (factoryContract, viem, publicClient, networkName
  */
 const verifyTokenDistribution = async (
   viem,
+  publicClient,
   tokenAddress,
   timelockAddress,
   creatorAddress,
@@ -109,12 +240,22 @@ const verifyTokenDistribution = async (
 ) => {
   logger.subHeader("Verifying Token Distribution");
 
+  await waitForCode(publicClient, tokenAddress, { label: "DAOToken" });
   const tokenContract = await viem.getContractAt("DAOToken", tokenAddress);
 
-  // Get balances
-  const creatorBalance = await tokenContract.read.balanceOf([creatorAddress]);
-  const treasuryBalance = await tokenContract.read.balanceOf([timelockAddress]);
-  const actualTotalSupply = await tokenContract.read.totalSupply();
+  // Get balances (retry on transient zero-data RPC responses)
+  const creatorBalance = await withRetries(
+    () => tokenContract.read.balanceOf([creatorAddress]),
+    { label: "DAOToken.balanceOf(creator)" }
+  );
+  const treasuryBalance = await withRetries(
+    () => tokenContract.read.balanceOf([timelockAddress]),
+    { label: "DAOToken.balanceOf(timelock)" }
+  );
+  const actualTotalSupply = await withRetries(
+    () => tokenContract.read.totalSupply(),
+    { label: "DAOToken.totalSupply" }
+  );
 
   // Calculate expected amounts
   const expectedCreatorAmount =
@@ -187,11 +328,15 @@ const verifyTokenDistribution = async (
  */
 const verifyQuorumSettings = async (
   viem,
+  publicClient,
   governorAddress,
   tokenAddress,
   creatorAddress
 ) => {
   logger.subHeader("Verifying Quorum Settings");
+
+  await waitForCode(publicClient, governorAddress, { label: "DAOGovernor" });
+  await waitForCode(publicClient, tokenAddress, { label: "DAOToken" });
 
   const governorContract = await viem.getContractAt(
     "DAOGovernor",
@@ -199,18 +344,29 @@ const verifyQuorumSettings = async (
   );
   const tokenContract = await viem.getContractAt("DAOToken", tokenAddress);
 
-  // Get public client for current block
-  const publicClient = await viem.getPublicClient();
   const currentBlock = await publicClient.getBlockNumber();
 
   // Get quorum at previous block (current block checkpoints may not be available)
-  const quorum = await governorContract.read.quorum([currentBlock - 1n]);
-  const creatorVotingPower = await tokenContract.read.getVotes([
-    creatorAddress,
-  ]);
-  const proposalThreshold = await governorContract.read.proposalThreshold();
-  const votingDelay = await governorContract.read.votingDelay();
-  const votingPeriod = await governorContract.read.votingPeriod();
+  const quorum = await withRetries(
+    () => governorContract.read.quorum([currentBlock - 1n]),
+    { label: "DAOGovernor.quorum" }
+  );
+  const creatorVotingPower = await withRetries(
+    () => tokenContract.read.getVotes([creatorAddress]),
+    { label: "DAOToken.getVotes" }
+  );
+  const proposalThreshold = await withRetries(
+    () => governorContract.read.proposalThreshold(),
+    { label: "DAOGovernor.proposalThreshold" }
+  );
+  const votingDelay = await withRetries(
+    () => governorContract.read.votingDelay(),
+    { label: "DAOGovernor.votingDelay" }
+  );
+  const votingPeriod = await withRetries(
+    () => governorContract.read.votingPeriod(),
+    { label: "DAOGovernor.votingPeriod" }
+  );
 
   logger.info(`Quorum required: ${formatEther(quorum)} tokens`);
   logger.info(

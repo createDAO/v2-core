@@ -14,6 +14,8 @@
  */
 
 import { network, artifacts } from "hardhat";
+import path from "path";
+import { fileURLToPath } from "url";
 import * as logger from "../utils/logger.js";
 import {
   DETERMINISTIC_DEPLOYER,
@@ -69,9 +71,12 @@ export const deployFactoryDeterministic = async (options = {}) => {
   logger.subHeader("Preparing Deployment");
   const factoryArtifact = await artifacts.readArtifact("DAOFactory");
   const initCode = factoryArtifact.bytecode;
-  
+
+  // Compute deployment info (used both for prediction + later record persistence)
+  const deploymentInfo = getDeploymentInfo(initCode, salt);
+
   // Compute and display predicted address
-  const predictedAddress = computeFactoryAddress(initCode, salt);
+  const predictedAddress = deploymentInfo.predictedAddress;
   logger.info(`Predicted DAOFactory address: ${predictedAddress}`);
   
   // Check if already deployed
@@ -84,11 +89,11 @@ export const deployFactoryDeterministic = async (options = {}) => {
     const factory = await viem.getContractAt("DAOFactory", predictedAddress);
     const tokenImplementation = await factory.read.tokenImplementation();
     const governorImplementation = await factory.read.governorImplementation();
-    
+
     logger.success(`DAOFactory: ${predictedAddress}`);
     logger.success(`DAOToken Implementation: ${tokenImplementation}`);
     logger.success(`DAOGovernor Implementation: ${governorImplementation}`);
-    
+
     return {
       factory: predictedAddress,
       tokenImplementation,
@@ -98,6 +103,9 @@ export const deployFactoryDeterministic = async (options = {}) => {
       viem,
       publicClient,
       alreadyDeployed: true,
+      salt,
+      txHash: null,
+      deploymentInfo,
     };
   }
 
@@ -127,7 +135,6 @@ export const deployFactoryDeterministic = async (options = {}) => {
 
   // Display deployment info for verification
   logger.subHeader("Deployment Info (for verification)");
-  const deploymentInfo = getDeploymentInfo(initCode, salt);
   logger.keyValue("CREATE2 Deployer", deploymentInfo.deployer);
   logger.keyValue("Salt", deploymentInfo.salt);
   logger.keyValue("Init Code Hash", deploymentInfo.initCodeHash);
@@ -142,6 +149,7 @@ export const deployFactoryDeterministic = async (options = {}) => {
     viem,
     publicClient,
     alreadyDeployed: false,
+    salt,
     txHash: result.txHash,
     deploymentInfo,
   };
@@ -231,8 +239,12 @@ const main = async () => {
   }
 };
 
-// Run if executed directly
-main();
+// Run if executed directly (avoid running on import)
+const __filename = fileURLToPath(import.meta.url);
+const isDirectRun = process.argv[1] && path.resolve(process.argv[1]) === __filename;
+if (isDirectRun) {
+  main();
+}
 
 export default { 
   deployFactoryDeterministic, 
