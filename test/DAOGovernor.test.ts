@@ -453,7 +453,7 @@ describe("DAOGovernor", function () {
     });
 
     it("Should transition to Executed after execution", async function () {
-      const { governor, token, creator, voter1, creatorAmount, networkHelpers, timelock } = await createDAOFixture();
+      const { governor, token, creator, voter1, creatorAmount, networkHelpers, timelock, params } = await createDAOFixture();
 
       // For this test, we need to transfer tokens to timelock first
       // The timelock already has 99% of tokens, so let's create a proposal to transfer FROM timelock
@@ -472,7 +472,7 @@ describe("DAOGovernor", function () {
       await voteFor(governor as any, proposalId, creator.account);
       await advancePastVotingPeriod(governor as any, networkHelpers);
       await queueProposal(governor as any, proposal, creator.account);
-      await advancePastTimelockDelay(networkHelpers);
+      await advancePastTimelockDelay(networkHelpers, params.timelockDelay);
       await executeProposal(governor as any, proposal, creator.account);
 
       const state = await getProposalState(governor as any, proposalId);
@@ -541,7 +541,7 @@ describe("DAOGovernor", function () {
     });
 
     it("Should execute proposal actions via timelock", async function () {
-      const { governor, token, creator, voter1, networkHelpers, timelock } = await createDAOFixture();
+      const { governor, token, creator, voter1, networkHelpers, timelock, params } = await createDAOFixture();
 
       await networkHelpers.mine();
 
@@ -560,7 +560,7 @@ describe("DAOGovernor", function () {
       await voteFor(governor as any, proposalId, creator.account);
       await advancePastVotingPeriod(governor as any, networkHelpers);
       await queueProposal(governor as any, proposal, creator.account);
-      await advancePastTimelockDelay(networkHelpers);
+      await advancePastTimelockDelay(networkHelpers, params.timelockDelay);
       await executeProposal(governor as any, proposal, creator.account);
 
       // Verify the transfer happened

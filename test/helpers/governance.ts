@@ -4,7 +4,7 @@
  * Encapsulates proposal creation, voting, and execution logic (SOLID - Single Responsibility)
  */
 import { keccak256, toHex, encodeFunctionData, type Abi, type Account } from "viem";
-import { VOTE_FOR, VOTE_AGAINST, VOTE_ABSTAIN, TIMELOCK_MIN_DELAY, ProposalState } from "./constants.js";
+import { VOTE_FOR, VOTE_AGAINST, VOTE_ABSTAIN, ProposalState } from "./constants.js";
 import type { NetworkHelpers } from "./fixtures.js";
 
 // ============ Types ============
@@ -193,10 +193,11 @@ export async function advancePastVotingPeriod(
  * Advance time past the timelock delay
  */
 export async function advancePastTimelockDelay(
-  networkHelpers: NetworkHelpers
+  networkHelpers: NetworkHelpers,
+  timelockDelaySeconds: bigint
 ): Promise<void> {
   // Increase time by timelock delay + 1 second
-  await networkHelpers.time.increase(Number(TIMELOCK_MIN_DELAY) + 1);
+  await networkHelpers.time.increase(Number(timelockDelaySeconds) + 1);
   await networkHelpers.mine();
 }
 
@@ -263,7 +264,8 @@ export async function executeFullProposalLifecycle(
   params: ProposalParams,
   proposerAccount: Account,
   voterAccount: Account,
-  networkHelpers: NetworkHelpers
+  networkHelpers: NetworkHelpers,
+  timelockDelaySeconds: bigint
 ): Promise<bigint> {
   // 1. Create proposal
   const proposalId = await createProposal(governor, params, proposerAccount);
@@ -281,7 +283,7 @@ export async function executeFullProposalLifecycle(
   await queueProposal(governor, params, proposerAccount);
 
   // 6. Wait for timelock delay
-  await advancePastTimelockDelay(networkHelpers);
+  await advancePastTimelockDelay(networkHelpers, timelockDelaySeconds);
 
   // 7. Execute
   await executeProposal(governor, params, proposerAccount);

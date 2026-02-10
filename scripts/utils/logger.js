@@ -162,8 +162,8 @@ export const tokenDistribution = (distribution) => {
 export const governanceConfig = (governance) => {
   subHeader("Governance Configuration");
   keyValue("DAO Name", governance.daoName);
-  keyValue("Voting Delay", `${governance.votingDelay} blocks`);
-  keyValue("Voting Period", `${governance.votingPeriod} blocks`);
+  keyValue("Voting Delay", `${governance.votingDelay} seconds`);
+  keyValue("Voting Period", `${governance.votingPeriod} seconds`);
   keyValue("Proposal Threshold", governance.proposalThreshold);
   keyValue("Quorum", `${governance.quorumPercent}% of total supply`);
 };

@@ -1,4 +1,0 @@
-# Deployment records (auto-generated)
-#
-# We keep the directory in git (via this file), but ignore any JSON records.
-*.json

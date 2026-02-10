@@ -3,6 +3,8 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {DAOToken} from "../DAOToken.sol";
+import {DAOGovernor} from "../DAOGovernor.sol";
+import {DAOTimelock} from "../DAOTimelock.sol";
 import {DAOFactory} from "../DAOFactory.sol";
 
 /**
@@ -24,7 +26,18 @@ contract DAOTokenFuzzTest is Test {
 
     function setUp() public {
         creator = address(this);
-        factory = new DAOFactory();
+        
+        // Deploy implementation contracts
+        DAOToken tokenImpl = new DAOToken();
+        DAOGovernor governorImpl = new DAOGovernor();
+        DAOTimelock timelockImpl = new DAOTimelock();
+        
+        // Deploy factory with implementation addresses
+        factory = new DAOFactory(
+            address(tokenImpl),
+            address(governorImpl),
+            address(timelockImpl)
+        );
 
         // Create a DAO to get a properly initialized token
         DAOFactory.CreateDAOParams memory params = DAOFactory.CreateDAOParams({
@@ -33,7 +46,8 @@ contract DAOTokenFuzzTest is Test {
             tokenSymbol: "FUZZ",
             totalSupply: 1_000_000 ether,
             votingDelay: 1,
-            votingPeriod: 100
+            votingPeriod: 100,
+            timelockDelay: 1
         });
 
         (address tokenAddr, address timelockAddr,) = factory.createDAO(params);

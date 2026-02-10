@@ -13,6 +13,10 @@ export const DEFAULT_DAO_PARAMS = {
   totalSupply: parseEther("1000000"), // 1 million tokens
   votingDelay: 1n, // 1 second (fast for testing)
   votingPeriod: 100n, // 100 seconds (fast for testing)
+  // Note: Hardhat auto-increments block timestamp by 1 second per tx.
+  // If timelockDelay is 1 second, a queue tx and an immediate execute tx can land
+  // in blocks with timestamps t and t+1, making the timelock ready immediately.
+  timelockDelay: 2n, // 2 seconds (fast for testing, but still enforces delay)
 } as const;
 
 // ============ Token Distribution ============

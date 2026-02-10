@@ -72,6 +72,7 @@ const main = async () => {
     addresses.factory = factoryResult.factory;
     addresses.tokenImplementation = factoryResult.tokenImplementation;
     addresses.governorImplementation = factoryResult.governorImplementation;
+    addresses.timelockImplementation = factoryResult.timelockImplementation;
     const networkName = factoryResult.networkName;
 
     logger.info(`Network: ${networkName}`);
@@ -86,6 +87,7 @@ const main = async () => {
         factory: addresses.factory,
         tokenImplementation: addresses.tokenImplementation,
         governorImplementation: addresses.governorImplementation,
+        timelockImplementation: addresses.timelockImplementation,
       },
       networkName
     );

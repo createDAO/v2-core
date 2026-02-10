@@ -42,6 +42,7 @@ const main = async () => {
       factory: record.factory.address,
       tokenImplementation: record.implementations.token,
       governorImplementation: record.implementations.governor,
+      timelockImplementation: record.implementations.timelock,
     },
     networkName
   );

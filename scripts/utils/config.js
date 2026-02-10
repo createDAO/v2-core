@@ -20,11 +20,15 @@ export const DEFAULT_DAO_CONFIG = {
   // 1,000,000 tokens with 18 decimals
   totalSupply: parseEther("1000000"),
 
-  // Governance Timing (in blocks)
-  // votingDelay: ~1 day on mainnet (assuming ~12 sec blocks)
-  votingDelay: 7200n,
-  // votingPeriod: ~1 week on mainnet (assuming ~12 sec blocks)
-  votingPeriod: 50400n,
+  // Governance Timing (in seconds)
+  // votingDelay: 1 day
+  votingDelay: 86400n,
+  // votingPeriod: 1 week
+  votingPeriod: 604800n,
+
+  // Timelock Timing (in seconds)
+  // timelockDelay: 1 day
+  timelockDelay: 86400n,
 };
 
 /**
@@ -33,11 +37,15 @@ export const DEFAULT_DAO_CONFIG = {
  */
 export const TESTNET_DAO_CONFIG = {
   ...DEFAULT_DAO_CONFIG,
-  // Shorter delays for testnet testing
-  // votingDelay: ~10 minutes on Sepolia (assuming ~12 sec blocks)
-  votingDelay: 50n,
-  // votingPeriod: ~1 hour on Sepolia (assuming ~12 sec blocks)
-  votingPeriod: 300n,
+  // Shorter delays for testnet testing (in seconds)
+  // votingDelay: 10 minutes
+  votingDelay: 60n,
+  // votingPeriod: 1 hour
+  votingPeriod: 360n,
+
+  // Timelock Timing (in seconds)
+  // timelockDelay: 10 minutes
+  timelockDelay: 60n,
 };
 
 /**
@@ -47,8 +55,6 @@ export const TESTNET_DAO_CONFIG = {
 export const FACTORY_CONSTANTS = {
   // Percentage of tokens sent to creator (1%)
   CREATOR_ALLOCATION_PERCENT: 1n,
-  // Fixed timelock delay: 1 day in seconds
-  TIMELOCK_MIN_DELAY: 86400n,
   // Quorum fraction (1% of total supply)
   QUORUM_FRACTION: 1n,
 };
@@ -61,7 +67,6 @@ export const FACTORY_CONSTANTS = {
 export const getConfigForNetwork = (networkName) => {
   const testnetworks = [
     "sepolia",
-    "basesepolia",
     "hardhat",
     "localhost",
     "hardhatMainnet",

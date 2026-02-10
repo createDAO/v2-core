@@ -7,6 +7,9 @@ A comprehensive DAO creation and management platform built on EVM-compatible blo
 [![OpenZeppelin](https://img.shields.io/badge/OpenZeppelin-5.4.0-purple.svg)](https://www.openzeppelin.com/contracts)
 [![Hardhat](https://img.shields.io/badge/Hardhat-3.1.0-yellow.svg)](https://hardhat.org/)
 
+> **⚠️ Important**
+> - The contracts are **NOT audited** yet
+
 ## About v2
 
 This is a **complete rewrite** of createDAO, rebuilt from the ground up using OpenZeppelin's battle-tested governance contracts. Version 2 prioritizes security and simplicity by leveraging the industry-standard OZ Governor pattern rather than custom governance implementations.
@@ -69,47 +72,47 @@ This is a **complete rewrite** of createDAO, rebuilt from the ground up using Op
 
 ## Deployments
 
-Deployed using Arachnid’s deterministic CREATE2 deployer, so the **DAOFactory address is identical across chains** when the salt + initCodeHash are the same.
+Deployed using Arachnid’s deterministic CREATE2 deployer, so the **DAOFactory address is identical across networks** when deployed with the same salt.
 
-### Base (Mainnet)
-
-| Contract | Address | Explorer |
-|----------|---------|----------|
-| **DAOFactory** | `0xd141662F4b788F28B2a0769a6d3f243D046B571f` | [View on Basescan](https://basescan.org/address/0xd141662F4b788F28B2a0769a6d3f243D046B571f) |
-| DAOToken Implementation | `0xfAAB628eddeEC6093CCdB5288b865a8073ab55Db` | [View on Basescan](https://basescan.org/address/0xfAAB628eddeEC6093CCdB5288b865a8073ab55Db) |
-| DAOGovernor Implementation | `0x2F81fb483fD1B578d16d41e92c62A365b4b04081` | [View on Basescan](https://basescan.org/address/0x2F81fb483fD1B578d16d41e92c62A365b4b04081) |
-
-**Example DAO deployed on Base (from deployment record `base-8453-2025-12-24T11-50-43.211Z.json`)**
+### DAOFactory (Same Address on Ethereum + Sepolia)
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| DAOToken (Proxy / Clone) | `0x154EB315Ab729E998847aA55F8b5bC73cf8A61d9` | [View on Basescan](https://basescan.org/address/0x154EB315Ab729E998847aA55F8b5bC73cf8A61d9) |
-| DAOGovernor (Proxy / Clone) | `0x4013cdFEB389A4213e8565258D2ac3604bFbB1B3` | [View on Basescan](https://basescan.org/address/0x4013cdFEB389A4213e8565258D2ac3604bFbB1B3) |
-| TimelockController (Treasury) | `0xb8CE0BbD2c5B589Da458677392B255E761E1A15F` | [View on Basescan](https://basescan.org/address/0xb8CE0BbD2c5B589Da458677392B255E761E1A15F) |
+| **DAOFactory** | `0xc852E5Cb44C50614a82050163aB7170cB88EB5F9` | [Ethereum](https://etherscan.io/address/0xc852E5Cb44C50614a82050163aB7170cB88EB5F9) · [Sepolia](https://sepolia.etherscan.io/address/0xc852E5Cb44C50614a82050163aB7170cB88EB5F9) |
+| DAOToken Implementation | `0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6` | [Ethereum](https://etherscan.io/address/0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6) · [Sepolia](https://sepolia.etherscan.io/address/0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6) |
+| DAOGovernor Implementation | `0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141` | [Ethereum](https://etherscan.io/address/0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141) · [Sepolia](https://sepolia.etherscan.io/address/0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141) |
+| DAOTimelock Implementation | `0xf8354d8F218cE905ddf3a24c88F3358ece319373` | [Ethereum](https://etherscan.io/address/0xf8354d8F218cE905ddf3a24c88F3358ece319373) · [Sepolia](https://sepolia.etherscan.io/address/0xf8354d8F218cE905ddf3a24c88F3358ece319373) |
+
+**Example DAO deployed on Ethereum (from deployment record `deployments/ethereum.latest.json`)**
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| DAOToken (Proxy / Clone) | `0x819b17cd5df5F9F9d99a28e800FFB32699c66C62` | [View on Etherscan](https://etherscan.io/address/0x819b17cd5df5F9F9d99a28e800FFB32699c66C62) |
+| DAOGovernor (Proxy / Clone) | `0x39Ff10A0eb805695fdA6f3BacD17eF6B01C17294` | [View on Etherscan](https://etherscan.io/address/0x39Ff10A0eb805695fdA6f3BacD17eF6B01C17294) |
+| TimelockController (Treasury) | `0x1dD03B88D166694073308685F8a2c57b46987300` | [View on Etherscan](https://etherscan.io/address/0x1dD03B88D166694073308685F8a2c57b46987300) |
 
 ### Sepolia (Ethereum Testnet)
 
-| Contract | Address | Explorer |
-|----------|---------|----------|
-| **DAOFactory** | `0xd141662F4b788F28B2a0769a6d3f243D046B571f` | [View on Etherscan](https://sepolia.etherscan.io/address/0xd141662F4b788F28B2a0769a6d3f243D046B571f) |
-| DAOToken Implementation | `0xfAAB628eddeEC6093CCdB5288b865a8073ab55Db` | [View on Etherscan](https://sepolia.etherscan.io/address/0xfAAB628eddeEC6093CCdB5288b865a8073ab55Db) |
-| DAOGovernor Implementation | `0x2F81fb483fD1B578d16d41e92c62A365b4b04081` | [View on Etherscan](https://sepolia.etherscan.io/address/0x2F81fb483fD1B578d16d41e92c62A365b4b04081) |
-
-**Example DAO deployed on Sepolia (from deployment record `sepolia-11155111-2025-12-24T11-25-23.612Z.json`)**
+**Example DAO deployed on Sepolia (from deployment record `deployments/sepolia.latest.json`)**
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| DAOToken (Proxy / Clone) | `0x2F524705E04aFa3b450a8C60f04975630B6deff4` | [View on Etherscan](https://sepolia.etherscan.io/address/0x2F524705E04aFa3b450a8C60f04975630B6deff4) |
-| DAOGovernor (Proxy / Clone) | `0x707e6c8d2C52C16eA4F93e41932b11e34814B4B0` | [View on Etherscan](https://sepolia.etherscan.io/address/0x707e6c8d2C52C16eA4F93e41932b11e34814B4B0) |
-| TimelockController (Treasury) | `0x2cA78756658e85DC5F175363553225881e8537FC` | [View on Etherscan](https://sepolia.etherscan.io/address/0x2cA78756658e85DC5F175363553225881e8537FC) |
+| DAOToken (Proxy / Clone) | `0xe7B56A39C430B9F993cf7954e1EeFA83a9d154dF` | [View on Etherscan](https://sepolia.etherscan.io/address/0xe7B56A39C430B9F993cf7954e1EeFA83a9d154dF) |
+| DAOGovernor (Proxy / Clone) | `0x944B6217582B731c27890Df7Af52Ad8eA8a934e2` | [View on Etherscan](https://sepolia.etherscan.io/address/0x944B6217582B731c27890Df7Af52Ad8eA8a934e2) |
+| TimelockController (Treasury) | `0xA11828FD53c4ca7Fa54a1ECbfef88EAFAe3906C1` | [View on Etherscan](https://sepolia.etherscan.io/address/0xA11828FD53c4ca7Fa54a1ECbfef88EAFAe3906C1) |
 
 #### Deployment Details (CREATE2)
 
 ```
+Ethereum:
 CREATE2 Deployer: 0x4e59b44847b379578588920cA78FbF26c0B4956C
-Salt: CreateDAO_Production_v2_0_0
-Salt Hash: 0x86e878d0db536a6fd426beb56994c299552f4885e0000a9bb0b08f46860e1fdb
-Init Code Hash: 0xb88b2130abbf8e7570a958fcdc98f4143b26f2bd1d7ad95c56b62f31350f8485
+Salt Label: production_2_0_0
+DAOFactory Address: 0xc852E5Cb44C50614a82050163aB7170cB88EB5F9
+
+Sepolia:
+CREATE2 Deployer: 0x4e59b44847b379578588920cA78FbF26c0B4956C
+Salt Label: production_2_0_0
+DAOFactory Address: 0xc852E5Cb44C50614a82050163aB7170cB88EB5F9
 ```
 
 ## Installation
@@ -130,13 +133,13 @@ Create a `.env` file in the project root:
 ```env
 # Network RPC URLs
 SEPOLIA_RPC_URL=https://rpc.ankr.com/eth_sepolia
-BASE_RPC_URL=https://mainnet.base.org
+ETHEREUM_RPC_URL=https://rpc.ankr.com/eth
 
 # API Keys for contract verification
 ETHERSCAN_API_KEY=your_etherscan_api_key
 
 # Deployment wallet (use hardhat-keystore for production)
-# PRIVATE_KEY=your_wallet_private_key
+# CreateDAO_Deployer=your_wallet_CreateDAO_Deployer
 ```
 
 ### Secure Key Management
@@ -145,7 +148,7 @@ For production deployments, use Hardhat's keystore feature instead of plaintext 
 
 ```bash
 # Create encrypted keystore
-npx hardhat keystore set deployer
+npx hardhat keystore set CreateDAO_Deployer
 
 # View keystore accounts
 npx hardhat keystore list
@@ -278,7 +281,7 @@ Copyright 2025 CreateDAO
 
 - **Website**: https://createdao.org
 - **Email**: info@createdao.org
-- **Author**: Dikobay
+- **Author**: @dikobay
 
 ## Contributing
 

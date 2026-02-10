@@ -28,6 +28,14 @@ export const DETERMINISTIC_DEPLOYER = "0x4e59b44847b379578588920cA78FbF26c0B4956
 export const DEFAULT_FACTORY_SALT = keccak256(toBytes("createDAO_DAOFactory_v1_dev"));
 
 /**
+ * Default salts for implementation contracts
+ * These ensure the same addresses across all chains
+ */
+export const TOKEN_IMPL_SALT = keccak256(toBytes("createDAO_DAOToken_Implementation_v1"));
+export const GOVERNOR_IMPL_SALT = keccak256(toBytes("createDAO_DAOGovernor_Implementation_v1"));
+export const TIMELOCK_IMPL_SALT = keccak256(toBytes("createDAO_DAOTimelock_Implementation_v1"));
+
+/**
  * Compute the CREATE2 address for a contract
  * @param {string} deployerAddress - The address of the CREATE2 deployer
  * @param {string} salt - The 32-byte salt (hex string)

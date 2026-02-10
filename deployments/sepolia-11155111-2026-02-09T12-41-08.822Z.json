@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-02-09T12:41:08.822Z",
+  "tag": "2.0.0",
+  "network": {
+    "name": "sepolia",
+    "chainId": 11155111
+  },
+  "create2": {
+    "deployer": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "saltLabel": "production_2_0_0",
+    "salt": "0x2698f52d5af07ff27f8254255519599905821bb882d84a02b07b1021633767b2",
+    "initCodeHash": "0x4db34c575c6f40b828dc84460056efb1ae830fc451f8872a2ce57a942f48f57b",
+    "predictedAddress": "0xc852E5Cb44C50614a82050163aB7170cB88EB5F9"
+  },
+  "factory": {
+    "address": "0xc852E5Cb44C50614a82050163aB7170cB88EB5F9",
+    "alreadyDeployed": false,
+    "txHash": "0x8ca85a1b29199ab1a860dc10fde28bf9b860e9a5145a5e4bd28c6e5fd8ecab2f"
+  },
+  "implementations": {
+    "token": "0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6",
+    "governor": "0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141",
+    "timelock": "0xf8354d8F218cE905ddf3a24c88F3358ece319373"
+  },
+  "dao": {
+    "tokenProxy": "0xe7B56A39C430B9F993cf7954e1EeFA83a9d154dF",
+    "governorProxy": "0x944B6217582B731c27890Df7Af52Ad8eA8a934e2",
+    "timelock": "0xA11828FD53c4ca7Fa54a1ECbfef88EAFAe3906C1",
+    "creator": "0xeb61b05ad0ddffb6db15ff84aa44ab0cb06e5699",
+    "config": {
+      "daoName": "TestDAO",
+      "tokenName": "TestDAO Token",
+      "tokenSymbol": "TEST",
+      "totalSupply": "1000000000000000000000000",
+      "votingDelay": "60",
+      "votingPeriod": "360",
+      "timelockDelay": "60"
+    }
+  }
+}

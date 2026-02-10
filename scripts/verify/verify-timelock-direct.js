@@ -37,12 +37,8 @@ const getNetworkName = async () => {
     
     // Map chain ID to network name
     const chainIdToNetwork = {
-      1: "mainnet",
+      1: "ethereum",
       11155111: "sepolia",
-      5: "goerli",
-      10: "optimism",
-      42161: "arbitrum",
-      137: "polygon",
       31337: "hardhat",
     };
     

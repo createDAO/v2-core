@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/governance/TimelockController.sol";
 import "@openzeppelin/contracts-upgradeable/governance/TimelockControllerUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "./DAOToken.sol";
 import "./DAOGovernor.sol";
+import "./DAOTimelock.sol";
 
 /**
  * @title DAOFactory
@@ -36,11 +36,10 @@ contract DAOFactory {
     error EmptyTokenSymbol();
     /// @notice Thrown when votingPeriod is zero
     error InvalidVotingPeriod();
+    /// @notice Thrown when timelockDelay is zero
+    error InvalidTimelockDelay();
     /// @notice Thrown when index is out of bounds
     error IndexOutOfBounds();
-
-    /// @notice Fixed timelock delay: 1 day
-    uint256 public constant TIMELOCK_MIN_DELAY = 1 days;
 
     /// @notice Percentage of tokens sent to creator (1%)
     uint256 public constant CREATOR_ALLOCATION_PERCENT = 1;
@@ -50,6 +49,9 @@ contract DAOFactory {
 
     /// @notice The DAOGovernor implementation contract address (for cloning)
     address public immutable governorImplementation;
+
+    /// @notice The DAOTimelock implementation contract address (for cloning)
+    address public immutable timelockImplementation;
 
     /// @notice Emitted when a new DAO is created
     event DAOCreated(
@@ -81,7 +83,12 @@ contract DAOFactory {
         uint256 totalSupply;
         uint48 votingDelay;
         uint32 votingPeriod;
+        uint256 timelockDelay;
     }
+
+    // ============ Custom Errors for Constructor ============
+    /// @notice Thrown when implementation address is zero
+    error InvalidImplementation();
 
     /// @notice Array of all deployed DAOs
     DAOInfo[] public deployedDAOs;
@@ -90,12 +97,25 @@ contract DAOFactory {
     mapping(address => DAOInfo[]) public creatorDAOs;
 
     /**
-     * @notice Deploys the DAOToken and DAOGovernor implementations for cloning
-     * @dev Implementation contracts are never initialized - only clones are
+     * @notice Initializes the factory with pre-deployed implementation contracts
+     * @dev Implementation contracts must be deployed separately before the factory.
+     *      This pattern reduces factory bytecode size and allows implementation reuse.
+     * @param tokenImpl_ Address of the deployed DAOToken implementation
+     * @param governorImpl_ Address of the deployed DAOGovernor implementation
+     * @param timelockImpl_ Address of the deployed DAOTimelock implementation
      */
-    constructor() {
-        tokenImplementation = address(new DAOToken());
-        governorImplementation = address(new DAOGovernor());
+    constructor(
+        address tokenImpl_,
+        address governorImpl_,
+        address timelockImpl_
+    ) {
+        if (tokenImpl_ == address(0)) revert InvalidImplementation();
+        if (governorImpl_ == address(0)) revert InvalidImplementation();
+        if (timelockImpl_ == address(0)) revert InvalidImplementation();
+        
+        tokenImplementation = tokenImpl_;
+        governorImplementation = governorImpl_;
+        timelockImplementation = timelockImpl_;
     }
 
     /**
@@ -107,6 +127,7 @@ contract DAOFactory {
      *   - totalSupply: Total token supply in wei (e.g., 1000000 * 10^18 for 1M tokens)
      *   - votingDelay: Delay in seconds before voting starts (e.g., 86400 for 1 day)
      *   - votingPeriod: Duration in seconds for voting (e.g., 604800 for 1 week)
+     *   - timelockDelay: Minimum delay in seconds for timelock operations (e.g., 86400 for 1 day)
      * @return token Address of deployed DAOToken (proxy)
      * @return timelock Address of deployed TimelockController (treasury)
      * @return governor Address of deployed DAOGovernor (proxy)
@@ -119,12 +140,13 @@ contract DAOFactory {
         if (bytes(params.tokenName).length == 0) revert EmptyTokenName();
         if (bytes(params.tokenSymbol).length == 0) revert EmptyTokenSymbol();
         if (params.votingPeriod == 0) revert InvalidVotingPeriod();
+        if (params.timelockDelay == 0) revert InvalidTimelockDelay();
 
         // Deploy all contracts
         (token, timelock, governor) = _deployContracts(params);
 
         // Configure timelock roles
-        _configureTimelock(TimelockController(payable(timelock)), governor);
+        _configureTimelock(DAOTimelock(payable(timelock)), governor);
 
         // Distribute tokens
         _distributeTokens(DAOToken(token), timelock, params.totalSupply);
@@ -148,7 +170,21 @@ contract DAOFactory {
     }
 
     /**
-     * @dev Deploys Token (via clone), Timelock, and Governor (via clone) contracts
+     * @dev Generates a unique salt for deterministic deployment
+     * @param creator The address creating the DAO
+     * @return salt The unique salt combining chainid, creator, and timestamp
+     */
+    function _generateSalt(address creator) internal view returns (bytes32) {
+        return keccak256(abi.encode(
+            block.chainid,      // Chain-specific - ensures unique addresses across chains
+            creator,            // Creator-specific
+            block.timestamp     // Timestamp for same-block uniqueness
+        ));
+    }
+
+    /**
+     * @dev Deploys Token, Timelock, and Governor via deterministic clones (CREATE2)
+     * Uses chain-unique salt to ensure different addresses across chains
      */
     function _deployContracts(
         CreateDAOParams calldata params
@@ -156,8 +192,12 @@ contract DAOFactory {
         // Calculate proposal threshold (1% of total supply)
         uint256 proposalThreshold = (params.totalSupply * CREATOR_ALLOCATION_PERCENT) / 100;
 
-        // Deploy Token as minimal proxy (EIP-1167 clone)
-        token = Clones.clone(tokenImplementation);
+        // Generate base salt for deterministic deployment
+        bytes32 baseSalt = _generateSalt(msg.sender);
+
+        // Deploy Token as deterministic minimal proxy (EIP-1167 clone with CREATE2)
+        bytes32 tokenSalt = keccak256(abi.encode(baseSalt, "TOKEN"));
+        token = Clones.cloneDeterministic(tokenImplementation, tokenSalt);
         DAOToken(token).initialize(
             params.tokenName,
             params.tokenSymbol,
@@ -165,22 +205,18 @@ contract DAOFactory {
             address(this)
         );
 
-        // Deploy TimelockController (not cloned - different config per DAO)
-        address[] memory proposers = new address[](0);
-        address[] memory executors = new address[](1);
-        executors[0] = address(0); // Anyone can execute
-
-        TimelockController timelockController = new TimelockController(
-            TIMELOCK_MIN_DELAY,
-            proposers,
-            executors,
-            address(this)
+        // Deploy Timelock as deterministic minimal proxy (EIP-1167 clone with CREATE2)
+        bytes32 timelockSalt = keccak256(abi.encode(baseSalt, "TIMELOCK"));
+        timelock = Clones.cloneDeterministic(timelockImplementation, timelockSalt);
+        DAOTimelock(payable(timelock)).initialize(
+            params.timelockDelay,
+            address(this)  // Factory is initial admin, will renounce after setup
         );
-        timelock = address(timelockController);
 
-        // Deploy Governor as minimal proxy (EIP-1167 clone)
+        // Deploy Governor as deterministic minimal proxy (EIP-1167 clone with CREATE2)
         // Creator (msg.sender) is set as the initial manager
-        governor = Clones.clone(governorImplementation);
+        bytes32 governorSalt = keccak256(abi.encode(baseSalt, "GOVERNOR"));
+        governor = Clones.cloneDeterministic(governorImplementation, governorSalt);
         DAOGovernor(payable(governor)).initialize(
             params.daoName,
             IVotes(token),
@@ -195,23 +231,23 @@ contract DAOFactory {
     }
 
     /**
-     * @dev Configures TimelockController roles
+     * @dev Configures DAOTimelock roles
      */
     function _configureTimelock(
-        TimelockController timelockController,
+        DAOTimelock daoTimelock,
         address governor
     ) internal {
         // Grant PROPOSER_ROLE to Governor
-        bytes32 proposerRole = timelockController.PROPOSER_ROLE();
-        timelockController.grantRole(proposerRole, governor);
+        bytes32 proposerRole = daoTimelock.PROPOSER_ROLE();
+        daoTimelock.grantRole(proposerRole, governor);
 
         // Grant CANCELLER_ROLE to Governor
-        bytes32 cancellerRole = timelockController.CANCELLER_ROLE();
-        timelockController.grantRole(cancellerRole, governor);
+        bytes32 cancellerRole = daoTimelock.CANCELLER_ROLE();
+        daoTimelock.grantRole(cancellerRole, governor);
 
         // Revoke ADMIN role from factory
-        bytes32 adminRole = timelockController.DEFAULT_ADMIN_ROLE();
-        timelockController.revokeRole(adminRole, address(this));
+        bytes32 adminRole = daoTimelock.DEFAULT_ADMIN_ROLE();
+        daoTimelock.revokeRole(adminRole, address(this));
     }
 
     /**

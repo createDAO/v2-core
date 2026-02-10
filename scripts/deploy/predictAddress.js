@@ -37,7 +37,7 @@ const main = async () => {
   logger.subHeader("Deployment Parameters");
   logger.keyValue("CREATE2 Deployer", DETERMINISTIC_DEPLOYER);
   logger.keyValue("Salt", DEFAULT_FACTORY_SALT);
-  logger.keyValue("Salt (human readable)", "createDAO_DAOFactory_v1");
+  logger.keyValue("Salt (human readable)", "createDAO_DAOFactory_v1_dev");
   logger.keyValue("Init Code Length", `${initCode.length / 2 - 1} bytes`);
   logger.keyValue("Init Code Hash", deploymentInfo.initCodeHash);
   

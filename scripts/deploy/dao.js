@@ -114,8 +114,9 @@ export const createDAO = async (factoryContract, viem, publicClient, networkName
   logger.info(`Token Name: ${config.tokenName}`);
   logger.info(`Token Symbol: ${config.tokenSymbol}`);
   logger.info(`Total Supply: ${formatEther(config.totalSupply)} tokens`);
-  logger.info(`Voting Delay: ${config.votingDelay} blocks`);
-  logger.info(`Voting Period: ${config.votingPeriod} blocks`);
+  logger.info(`Voting Delay: ${config.votingDelay} seconds`);
+  logger.info(`Voting Period: ${config.votingPeriod} seconds`);
+  logger.info(`Timelock Delay: ${config.timelockDelay} seconds`);
 
   // Prepare parameters struct
   const params = {
@@ -125,6 +126,7 @@ export const createDAO = async (factoryContract, viem, publicClient, networkName
     totalSupply: config.totalSupply,
     votingDelay: config.votingDelay,
     votingPeriod: config.votingPeriod,
+    timelockDelay: config.timelockDelay,
   };
 
   // Create DAO

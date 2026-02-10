@@ -4,28 +4,21 @@
  */
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { parseEther, encodeFunctionData, getAddress } from "viem";
+import { parseEther, encodeFunctionData } from "viem";
 
 import {
   deployFactoryFixture,
   createDAOFixture,
-  createDAOWithVotersFixture,
   DEFAULT_DAO_PARAMS,
   ProposalState,
-  TIMELOCK_MIN_DELAY,
   createProposal,
   createTokenTransferProposal,
   voteFor,
   voteAgainst,
   advancePastVotingDelay,
   advancePastVotingPeriod,
-  advancePastTimelockDelay,
-  queueProposal,
-  executeProposal,
   getProposalState,
   executeFullProposalLifecycle,
-  calculateCreatorAmount,
-  calculateTreasuryAmount,
 } from "../helpers/index.js";
 
 describe("Integration: Governance Flow", function () {
@@ -55,7 +48,8 @@ describe("Integration: Governance Flow", function () {
         proposal,
         creator.account,
         creator.account,
-        networkHelpers
+        networkHelpers,
+        DEFAULT_DAO_PARAMS.timelockDelay
       );
 
       // Verify final state
@@ -206,7 +200,8 @@ describe("Integration: Governance Flow", function () {
         proposal,
         creator.account,
         creator.account,
-        networkHelpers
+        networkHelpers,
+        DEFAULT_DAO_PARAMS.timelockDelay
       );
 
       // Verify balances changed
@@ -262,7 +257,8 @@ describe("Integration: Governance Flow", function () {
         proposal,
         creator.account,
         creator.account,
-        networkHelpers
+        networkHelpers,
+        DEFAULT_DAO_PARAMS.timelockDelay
       );
 
       // Verify ETH was sent
@@ -313,7 +309,8 @@ describe("Integration: Governance Flow", function () {
         proposal,
         creator.account,
         creator.account,
-        networkHelpers
+        networkHelpers,
+        DEFAULT_DAO_PARAMS.timelockDelay
       );
 
       // Verify voting delay changed
@@ -403,7 +400,8 @@ describe("Integration: Governance Flow", function () {
         proposal,
         creator.account,
         creator.account,
-        networkHelpers
+        networkHelpers,
+        DEFAULT_DAO_PARAMS.timelockDelay
       );
 
       // Verify new member received tokens
@@ -435,7 +433,8 @@ describe("Integration: Governance Flow", function () {
         proposal1,
         creator.account,
         creator.account,
-        networkHelpers
+        networkHelpers,
+        DEFAULT_DAO_PARAMS.timelockDelay
       );
 
       const voter1BalanceAfterFirst = await token.read.balanceOf([voter1.account.address]);
@@ -454,7 +453,8 @@ describe("Integration: Governance Flow", function () {
         proposal2,
         creator.account,
         creator.account,
-        networkHelpers
+        networkHelpers,
+        DEFAULT_DAO_PARAMS.timelockDelay
       );
 
       const voter1BalanceAfterSecond = await token.read.balanceOf([voter1.account.address]);

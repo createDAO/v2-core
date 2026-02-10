@@ -11,7 +11,6 @@ import {
   createDAOFixture,
   DEFAULT_DAO_PARAMS,
   ZERO_ADDRESS,
-  TIMELOCK_MIN_DELAY,
   calculateCreatorAmount,
   calculateTreasuryAmount,
 } from "./helpers/index.js";
@@ -34,10 +33,8 @@ describe("DAOFactory", function () {
     it("Should have correct constant values", async function () {
       const { factory } = await deployFactoryFixture();
 
-      const timelockDelay = await factory.read.TIMELOCK_MIN_DELAY();
       const creatorPercent = await factory.read.CREATOR_ALLOCATION_PERCENT();
 
-      assert.equal(timelockDelay, TIMELOCK_MIN_DELAY, "Timelock delay should be 1 day");
       assert.equal(creatorPercent, 1n, "Creator allocation should be 1%");
     });
 
@@ -126,6 +123,21 @@ describe("DAOFactory", function () {
         "InvalidVotingPeriod"
       );
     });
+
+    it("Should revert with zero timelock delay", async function () {
+      const { factory, viem, creator } = await deployFactoryFixture();
+
+      const invalidParams = {
+        ...DEFAULT_DAO_PARAMS,
+        timelockDelay: 0n,
+      };
+
+      await viem.assertions.revertWithCustomError(
+        factory.write.createDAO([invalidParams], { account: creator.account }),
+        factory,
+        "InvalidTimelockDelay"
+      );
+    });
   });
 
   // ============ DAO Creation Tests ============
@@ -188,10 +200,10 @@ describe("DAOFactory", function () {
     });
 
     it("Should deploy timelock with correct configuration", async function () {
-      const { timelock } = await createDAOFixture();
+      const { timelock, params } = await createDAOFixture();
 
       const minDelay = await timelock.read.getMinDelay();
-      assert.equal(minDelay, TIMELOCK_MIN_DELAY, "Timelock min delay should be 1 day");
+      assert.equal(minDelay, params.timelockDelay, "Timelock min delay should match creation params");
     });
   });
 

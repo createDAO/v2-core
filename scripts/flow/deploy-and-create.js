@@ -51,6 +51,7 @@ const main = async () => {
     addresses.factory = factoryResult.factory;
     addresses.tokenImplementation = factoryResult.tokenImplementation;
     addresses.governorImplementation = factoryResult.governorImplementation;
+    addresses.timelockImplementation = factoryResult.timelockImplementation;
 
     // STEP 2: Create DAO
     logger.step(2, "Creating DAO from Factory");
@@ -79,6 +80,9 @@ const main = async () => {
       },
       create2: {
         deployer: factoryResult.deploymentInfo?.deployer || null,
+        // Preserve the original human-readable salt label (if provided)
+        // e.g. FACTORY_SALT="CreateDAO_dev_v2_0_0"
+        saltLabel: process.env.FACTORY_SALT || null,
         salt: factoryResult.deploymentInfo?.salt || factoryResult.salt || null,
         initCodeHash: factoryResult.deploymentInfo?.initCodeHash || null,
         predictedAddress: factoryResult.deploymentInfo?.predictedAddress || null,
@@ -91,6 +95,7 @@ const main = async () => {
       implementations: {
         token: addresses.tokenImplementation,
         governor: addresses.governorImplementation,
+        timelock: addresses.timelockImplementation,
       },
       dao: {
         tokenProxy: addresses.token,

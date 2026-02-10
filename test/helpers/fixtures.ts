@@ -25,14 +25,26 @@ export async function deployFactoryFixture() {
   const [deployer, creator, voter1, voter2] = await viem.getWalletClients();
   const publicClient = await viem.getPublicClient();
 
-  // Deploy factory
-  const factory = await viem.deployContract("DAOFactory");
+  // Deploy implementation contracts separately (reduces factory bytecode size)
+  const tokenImpl = await viem.deployContract("DAOToken");
+  const governorImpl = await viem.deployContract("DAOGovernor");
+  const timelockImpl = await viem.deployContract("DAOTimelock");
+
+  // Deploy factory with implementation addresses
+  const factory = await viem.deployContract("DAOFactory", [
+    tokenImpl.address,
+    governorImpl.address,
+    timelockImpl.address,
+  ]);
 
   return {
     viem,
     networkHelpers,
     publicClient,
     factory,
+    tokenImpl,
+    governorImpl,
+    timelockImpl,
     deployer,
     creator,
     voter1,

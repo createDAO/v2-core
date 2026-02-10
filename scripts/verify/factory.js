@@ -13,22 +13,13 @@ import { verify } from "../utils/verification.js";
  * @param {string} addresses.factory - The DAOFactory contract address
  * @param {string} addresses.tokenImplementation - The DAOToken implementation address
  * @param {string} addresses.governorImplementation - The DAOGovernor implementation address
+ * @param {string} addresses.timelockImplementation - The DAOTimelock implementation address
  * @param {string} networkName - The network name (for skipping local networks)
  */
 export const verifyFactoryContracts = async (addresses, networkName) => {
   logger.subHeader("Verifying Factory Contracts");
 
-  const { factory, tokenImplementation, governorImplementation } = addresses;
-
-  // Verify DAOFactory (no constructor arguments)
-  logger.info("Verifying DAOFactory...");
-  await verify(
-    factory,
-    [], // No constructor args
-    "contracts/DAOFactory.sol:DAOFactory",
-    networkName
-  );
-  logger.success("DAOFactory verification initiated");
+  const { factory, tokenImplementation, governorImplementation, timelockImplementation } = addresses;
 
   // Verify DAOToken implementation (no constructor arguments - uses _disableInitializers)
   logger.info("Verifying DAOToken implementation...");
@@ -49,6 +40,26 @@ export const verifyFactoryContracts = async (addresses, networkName) => {
     networkName
   );
   logger.success("DAOGovernor implementation verification initiated");
+
+  // Verify DAOTimelock implementation (no constructor arguments - uses _disableInitializers)
+  logger.info("Verifying DAOTimelock implementation...");
+  await verify(
+    timelockImplementation,
+    [], // No constructor args
+    "contracts/DAOTimelock.sol:DAOTimelock",
+    networkName
+  );
+  logger.success("DAOTimelock implementation verification initiated");
+
+  // Verify DAOFactory (constructor takes 3 implementation addresses)
+  logger.info("Verifying DAOFactory...");
+  await verify(
+    factory,
+    [tokenImplementation, governorImplementation, timelockImplementation], // Constructor args
+    "contracts/DAOFactory.sol:DAOFactory",
+    networkName
+  );
+  logger.success("DAOFactory verification initiated");
 };
 
 /**

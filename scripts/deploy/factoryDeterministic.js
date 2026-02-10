@@ -3,6 +3,14 @@
  * @notice Deploys the DAOFactory contract using CREATE2 for same-address cross-chain deployment
  * @dev Uses Arachnid's Deterministic Deployment Proxy to ensure identical addresses across all EVM chains
  * 
+ * Deployment Flow:
+ * 1. Deploy DAOToken implementation via CREATE2 (deterministic)
+ * 2. Deploy DAOGovernor implementation via CREATE2 (deterministic)
+ * 3. Deploy DAOTimelock implementation via CREATE2 (deterministic)
+ * 4. Deploy DAOFactory via CREATE2 with implementation addresses as constructor args
+ * 
+ * All contracts (implementations + factory) will have identical addresses across all chains.
+ * 
  * Usage:
  *   npx hardhat run scripts/deploy/factoryDeterministic.js --network <network>
  * 
@@ -16,11 +24,15 @@
 import { network, artifacts } from "hardhat";
 import path from "path";
 import { fileURLToPath } from "url";
+import { encodeAbiParameters, parseAbiParameters } from "viem";
 import * as logger from "../utils/logger.js";
 import {
   DETERMINISTIC_DEPLOYER,
   DEFAULT_FACTORY_SALT,
-  computeFactoryAddress,
+  TOKEN_IMPL_SALT,
+  GOVERNOR_IMPL_SALT,
+  TIMELOCK_IMPL_SALT,
+  computeCreate2Address,
   deployViaCreate2,
   isDeployerAvailable,
   isContractDeployed,
@@ -29,6 +41,15 @@ import {
 
 /**
  * Deploy the DAOFactory contract using CREATE2 for deterministic addressing
+ * 
+ * Deployment Flow:
+ * 1. Deploy DAOToken implementation via CREATE2 (deterministic)
+ * 2. Deploy DAOGovernor implementation via CREATE2 (deterministic)
+ * 3. Deploy DAOTimelock implementation via CREATE2 (deterministic)
+ * 4. Deploy DAOFactory via CREATE2 with implementation addresses (deterministic)
+ * 
+ * All contracts will have the same addresses across all chains.
+ * 
  * @param {object} [options] - Deployment options
  * @param {string} [options.salt] - Custom salt (defaults to DEFAULT_FACTORY_SALT)
  * @returns {Object} Deployment result with factory and implementation addresses
@@ -67,15 +88,61 @@ export const deployFactoryDeterministic = async (options = {}) => {
   }
   logger.success("Deterministic deployer is available");
 
+  // STEP 1: Deploy implementation contracts via CREATE2 (deterministic)
+  logger.subHeader("Step 1: Deploying Implementation Contracts (CREATE2)");
+  
+  // Get implementation bytecodes
+  const tokenArtifact = await artifacts.readArtifact("DAOToken");
+  const governorArtifact = await artifacts.readArtifact("DAOGovernor");
+  const timelockArtifact = await artifacts.readArtifact("DAOTimelock");
+  
+  logger.info("Deploying DAOToken implementation via CREATE2...");
+  const tokenResult = await deployViaCreate2({
+    walletClient: deployer,
+    publicClient,
+    initCode: tokenArtifact.bytecode,
+    salt: TOKEN_IMPL_SALT,
+  });
+  const tokenImplementation = tokenResult.address;
+  logger.success(`DAOToken Implementation: ${tokenImplementation}${tokenResult.alreadyDeployed ? ' (already deployed)' : ''}`);
+  
+  logger.info("Deploying DAOGovernor implementation via CREATE2...");
+  const governorResult = await deployViaCreate2({
+    walletClient: deployer,
+    publicClient,
+    initCode: governorArtifact.bytecode,
+    salt: GOVERNOR_IMPL_SALT,
+  });
+  const governorImplementation = governorResult.address;
+  logger.success(`DAOGovernor Implementation: ${governorImplementation}${governorResult.alreadyDeployed ? ' (already deployed)' : ''}`);
+  
+  logger.info("Deploying DAOTimelock implementation via CREATE2...");
+  const timelockResult = await deployViaCreate2({
+    walletClient: deployer,
+    publicClient,
+    initCode: timelockArtifact.bytecode,
+    salt: TIMELOCK_IMPL_SALT,
+  });
+  const timelockImplementation = timelockResult.address;
+  logger.success(`DAOTimelock Implementation: ${timelockImplementation}${timelockResult.alreadyDeployed ? ' (already deployed)' : ''}`);
+
+  // STEP 2: Prepare factory deployment with constructor args
+  logger.subHeader("Step 2: Preparing DAOFactory Deployment");
+  
   // Get DAOFactory bytecode
-  logger.subHeader("Preparing Deployment");
   const factoryArtifact = await artifacts.readArtifact("DAOFactory");
-  const initCode = factoryArtifact.bytecode;
+  
+  // Encode constructor arguments: (address tokenImpl_, address governorImpl_, address timelockImpl_)
+  const constructorArgs = encodeAbiParameters(
+    parseAbiParameters("address, address, address"),
+    [tokenImplementation, governorImplementation, timelockImplementation]
+  );
+  
+  // Create initCode = bytecode + constructor args
+  const initCode = factoryArtifact.bytecode + constructorArgs.slice(2); // Remove 0x from args
 
-  // Compute deployment info (used both for prediction + later record persistence)
+  // Compute deployment info
   const deploymentInfo = getDeploymentInfo(initCode, salt);
-
-  // Compute and display predicted address
   const predictedAddress = deploymentInfo.predictedAddress;
   logger.info(`Predicted DAOFactory address: ${predictedAddress}`);
   
@@ -83,21 +150,15 @@ export const deployFactoryDeterministic = async (options = {}) => {
   const alreadyDeployed = await isContractDeployed(publicClient, predictedAddress);
   if (alreadyDeployed) {
     logger.warn(`DAOFactory already deployed at ${predictedAddress}`);
-    logger.info("Retrieving existing deployment info...");
+    logger.info("Note: Implementation contracts were still checked/deployed via CREATE2");
     
-    // Get implementation addresses from existing factory
     const factory = await viem.getContractAt("DAOFactory", predictedAddress);
-    const tokenImplementation = await factory.read.tokenImplementation();
-    const governorImplementation = await factory.read.governorImplementation();
-
-    logger.success(`DAOFactory: ${predictedAddress}`);
-    logger.success(`DAOToken Implementation: ${tokenImplementation}`);
-    logger.success(`DAOGovernor Implementation: ${governorImplementation}`);
 
     return {
       factory: predictedAddress,
       tokenImplementation,
       governorImplementation,
+      timelockImplementation,
       factoryContract: factory,
       networkName,
       viem,
@@ -109,8 +170,8 @@ export const deployFactoryDeterministic = async (options = {}) => {
     };
   }
 
-  // Deploy via CREATE2
-  logger.subHeader("Deploying DAOFactory via CREATE2");
+  // STEP 3: Deploy factory via CREATE2
+  logger.subHeader("Step 3: Deploying DAOFactory via CREATE2");
   logger.info("Sending deployment transaction...");
   
   const result = await deployViaCreate2({
@@ -125,13 +186,19 @@ export const deployFactoryDeterministic = async (options = {}) => {
     logger.info(`Transaction hash: ${result.txHash}`);
   }
 
-  // Get implementation addresses from the factory
+  // Get factory contract instance
   const factory = await viem.getContractAt("DAOFactory", result.address);
-  const tokenImplementation = await factory.read.tokenImplementation();
-  const governorImplementation = await factory.read.governorImplementation();
 
-  logger.success(`DAOToken Implementation: ${tokenImplementation}`);
-  logger.success(`DAOGovernor Implementation: ${governorImplementation}`);
+  // Verify implementation addresses match
+  const storedTokenImpl = await factory.read.tokenImplementation();
+  const storedGovernorImpl = await factory.read.governorImplementation();
+  const storedTimelockImpl = await factory.read.timelockImplementation();
+  
+  if (storedTokenImpl.toLowerCase() !== tokenImplementation.toLowerCase() ||
+      storedGovernorImpl.toLowerCase() !== governorImplementation.toLowerCase() ||
+      storedTimelockImpl.toLowerCase() !== timelockImplementation.toLowerCase()) {
+    logger.warn("Warning: Stored implementation addresses don't match deployed ones!");
+  }
 
   // Display deployment info for verification
   logger.subHeader("Deployment Info (for verification)");
@@ -144,6 +211,7 @@ export const deployFactoryDeterministic = async (options = {}) => {
     factory: result.address,
     tokenImplementation,
     governorImplementation,
+    timelockImplementation,
     factoryContract: factory,
     networkName,
     viem,
@@ -229,6 +297,7 @@ const main = async () => {
       factory: result.factory,
       tokenImplementation: result.tokenImplementation,
       governorImplementation: result.governorImplementation,
+      timelockImplementation: result.timelockImplementation,
     });
     
     return result;
