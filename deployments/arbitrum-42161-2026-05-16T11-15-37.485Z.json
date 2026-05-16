@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-05-16T11:15:37.485Z",
+  "tag": "arbitrum",
+  "network": {
+    "name": "arbitrum",
+    "chainId": 42161
+  },
+  "create2": {
+    "deployer": "0x4e59b44847b379578588920cA78FbF26c0B4956C",
+    "saltLabel": "production_2_0_0",
+    "salt": "0x2698f52d5af07ff27f8254255519599905821bb882d84a02b07b1021633767b2",
+    "initCodeHash": "0x4db34c575c6f40b828dc84460056efb1ae830fc451f8872a2ce57a942f48f57b",
+    "predictedAddress": "0xc852E5Cb44C50614a82050163aB7170cB88EB5F9"
+  },
+  "factory": {
+    "address": "0xc852E5Cb44C50614a82050163aB7170cB88EB5F9",
+    "alreadyDeployed": false,
+    "txHash": "0x638fd670d16e6d664288ce30730a8f03c29630dcca4e15df0ca7ecf57094718e"
+  },
+  "implementations": {
+    "token": "0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6",
+    "governor": "0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141",
+    "timelock": "0xf8354d8F218cE905ddf3a24c88F3358ece319373"
+  },
+  "dao": {
+    "tokenProxy": "0x0E737CDfa20F404d76A0D7fB0c657bbe1027cbA5",
+    "governorProxy": "0x857566729C7a1633d4BFEEfeaCC93ea91EC2D530",
+    "timelock": "0x01Ac081d687041541Bb0C14F90Ab1a40f7090040",
+    "creator": "0xeb61b05ad0ddffb6db15ff84aa44ab0cb06e5699",
+    "config": {
+      "daoName": "TestDAO",
+      "tokenName": "TestDAO Token",
+      "tokenSymbol": "TEST",
+      "totalSupply": "1000000000000000000000000",
+      "votingDelay": "86400",
+      "votingPeriod": "604800",
+      "timelockDelay": "86400"
+    }
+  }
+}

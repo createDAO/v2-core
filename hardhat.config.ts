@@ -60,6 +60,21 @@ export default defineConfig({
       url: configVariable("SEPOLIA_RPC_URL"),
       accounts: [configVariable("CreateDAO_Deployer")],
     },
+
+    base: {
+      type: "http",
+      chainType: "op",
+      chainId: 8453,
+      url: configVariable("BASE_RPC_URL"),
+      accounts: [configVariable("CreateDAO_Deployer")],
+    },
+    arbitrum: {
+      type: "http",
+      chainType: "l1",
+      chainId: 42161,
+      url: configVariable("ARBITRUM_RPC_URL"),
+      accounts: [configVariable("CreateDAO_Deployer")],
+    },
   },
 
   verify: {
@@ -84,6 +99,22 @@ export default defineConfig({
         urls: {
           apiURL: "https://api.etherscan.io/v2/api",
           browserURL: "https://sepolia.etherscan.io",
+        },
+      },
+      {
+        network: "base",
+        chainId: 8453,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api",
+          browserURL: "https://basescan.org",
+        },
+      },
+      {
+        network: "arbitrum",
+        chainId: 42161,
+        urls: {
+          apiURL: "https://api.etherscan.io/v2/api",
+          browserURL: "https://arbiscan.io",
         },
       },
     ],

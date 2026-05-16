@@ -74,14 +74,14 @@ This is a **complete rewrite** of createDAO, rebuilt from the ground up using Op
 
 Deployed using Arachnid’s deterministic CREATE2 deployer, so the **DAOFactory address is identical across networks** when deployed with the same salt.
 
-### DAOFactory (Same Address on Ethereum + Sepolia)
+### DAOFactory (Same Address on Ethereum, Arbitrum + Sepolia)
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| **DAOFactory** | `0xc852E5Cb44C50614a82050163aB7170cB88EB5F9` | [Ethereum](https://etherscan.io/address/0xc852E5Cb44C50614a82050163aB7170cB88EB5F9) · [Sepolia](https://sepolia.etherscan.io/address/0xc852E5Cb44C50614a82050163aB7170cB88EB5F9) |
-| DAOToken Implementation | `0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6` | [Ethereum](https://etherscan.io/address/0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6) · [Sepolia](https://sepolia.etherscan.io/address/0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6) |
-| DAOGovernor Implementation | `0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141` | [Ethereum](https://etherscan.io/address/0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141) · [Sepolia](https://sepolia.etherscan.io/address/0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141) |
-| DAOTimelock Implementation | `0xf8354d8F218cE905ddf3a24c88F3358ece319373` | [Ethereum](https://etherscan.io/address/0xf8354d8F218cE905ddf3a24c88F3358ece319373) · [Sepolia](https://sepolia.etherscan.io/address/0xf8354d8F218cE905ddf3a24c88F3358ece319373) |
+| **DAOFactory** | `0xc852E5Cb44C50614a82050163aB7170cB88EB5F9` | [Ethereum](https://etherscan.io/address/0xc852E5Cb44C50614a82050163aB7170cB88EB5F9) · [Arbitrum](https://arbiscan.io/address/0xc852E5Cb44C50614a82050163aB7170cB88EB5F9) · [Sepolia](https://sepolia.etherscan.io/address/0xc852E5Cb44C50614a82050163aB7170cB88EB5F9) |
+| DAOToken Implementation | `0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6` | [Ethereum](https://etherscan.io/address/0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6) · [Arbitrum](https://arbiscan.io/address/0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6) · [Sepolia](https://sepolia.etherscan.io/address/0x4516F43c475A4c469367A1AfD2998FC30CF8C3B6) |
+| DAOGovernor Implementation | `0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141` | [Ethereum](https://etherscan.io/address/0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141) · [Arbitrum](https://arbiscan.io/address/0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141) · [Sepolia](https://sepolia.etherscan.io/address/0xC6Ee7F3D2D3BbA67d0a2a6562d5b6A416e390141) |
+| DAOTimelock Implementation | `0xf8354d8F218cE905ddf3a24c88F3358ece319373` | [Ethereum](https://etherscan.io/address/0xf8354d8F218cE905ddf3a24c88F3358ece319373) · [Arbitrum](https://arbiscan.io/address/0xf8354d8F218cE905ddf3a24c88F3358ece319373) · [Sepolia](https://sepolia.etherscan.io/address/0xf8354d8F218cE905ddf3a24c88F3358ece319373) |
 
 **Example DAO deployed on Ethereum (from deployment record `deployments/ethereum.latest.json`)**
 
@@ -90,6 +90,16 @@ Deployed using Arachnid’s deterministic CREATE2 deployer, so the **DAOFactory 
 | DAOToken (Proxy / Clone) | `0x819b17cd5df5F9F9d99a28e800FFB32699c66C62` | [View on Etherscan](https://etherscan.io/address/0x819b17cd5df5F9F9d99a28e800FFB32699c66C62) |
 | DAOGovernor (Proxy / Clone) | `0x39Ff10A0eb805695fdA6f3BacD17eF6B01C17294` | [View on Etherscan](https://etherscan.io/address/0x39Ff10A0eb805695fdA6f3BacD17eF6B01C17294) |
 | TimelockController (Treasury) | `0x1dD03B88D166694073308685F8a2c57b46987300` | [View on Etherscan](https://etherscan.io/address/0x1dD03B88D166694073308685F8a2c57b46987300) |
+
+### Arbitrum
+
+**Example DAO deployed on Arbitrum (from deployment record `deployments/arbitrum.latest.json`)**
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| DAOToken (Proxy / Clone) | `0x0E737CDfa20F404d76A0D7fB0c657bbe1027cbA5` | [View on Arbiscan](https://arbiscan.io/address/0x0E737CDfa20F404d76A0D7fB0c657bbe1027cbA5) |
+| DAOGovernor (Proxy / Clone) | `0x857566729C7a1633d4BFEEfeaCC93ea91EC2D530` | [View on Arbiscan](https://arbiscan.io/address/0x857566729C7a1633d4BFEEfeaCC93ea91EC2D530) |
+| TimelockController (Treasury) | `0x01Ac081d687041541Bb0C14F90Ab1a40f7090040` | [View on Arbiscan](https://arbiscan.io/address/0x01Ac081d687041541Bb0C14F90Ab1a40f7090040) |
 
 ### Sepolia (Ethereum Testnet)
 
@@ -105,6 +115,11 @@ Deployed using Arachnid’s deterministic CREATE2 deployer, so the **DAOFactory 
 
 ```
 Ethereum:
+CREATE2 Deployer: 0x4e59b44847b379578588920cA78FbF26c0B4956C
+Salt Label: production_2_0_0
+DAOFactory Address: 0xc852E5Cb44C50614a82050163aB7170cB88EB5F9
+
+Arbitrum:
 CREATE2 Deployer: 0x4e59b44847b379578588920cA78FbF26c0B4956C
 Salt Label: production_2_0_0
 DAOFactory Address: 0xc852E5Cb44C50614a82050163aB7170cB88EB5F9
@@ -134,6 +149,7 @@ Create a `.env` file in the project root:
 # Network RPC URLs
 SEPOLIA_RPC_URL=https://rpc.ankr.com/eth_sepolia
 ETHEREUM_RPC_URL=https://rpc.ankr.com/eth
+ARBITRUM_RPC_URL=https://rpc.ankr.com/arbitrum
 
 # API Keys for contract verification
 ETHERSCAN_API_KEY=your_etherscan_api_key
